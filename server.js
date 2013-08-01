@@ -2,6 +2,8 @@
 var connect = require('connect')
     , express = require('express')
     , io = require('socket.io')
+//    , amqp = require('amqp')
+    , rabbit = require('rabbit.js')
     , port = (process.env.PORT || 8081);
 
 //Setup Express
@@ -35,21 +37,45 @@ server.error(function(err, req, res, next){
                 },status: 500 });
     }
 });
-server.listen( port);
+server.listen(port);
 
-//Setup Socket.IO
-var io = io.listen(server);
-io.sockets.on('connection', function(socket){
-  console.log('Client Connected');
-  socket.on('message', function(data){
-    socket.broadcast.emit('server_message',data);
-    socket.emit('server_message',data);
-  });
-  socket.on('disconnect', function(){
-    console.log('Client Disconnected.');
-  });
-});
-
+//amqp
+//var rconn = amqp.createConnection({ host: 'localhost' });
+//rconn.on('ready', function () {
+//    var client_exchange = rconn.exchange("S24Demo.PubSub.Client", {
+//        autoDelete: false,
+//        durable: true,
+//        type: 'topic',
+//        passive: 'true'
+//    });
+//    rconn.exchange("S24Demo.PubSub.Server", {
+//        autoDelete: false,
+//        durable: true,
+//        type: 'fanout'
+//    });
+//    //Setup Socket.IO
+//    var socket = io.listen(server);
+//    socket.sockets.on('connection', function(client){
+//      var queue_entity = rconn.queue("entity_server" + client.id, {
+//        durable: false,
+//        exclusive: true
+//      }, function(){
+//        queue_entity.bind('S24Demo.PubSub.Server', '#');
+//      });
+//      client.on('bank:update', function(bank){
+//        client_exchange.publish("#", bank, { type: 'S24Demo_Entity_Bank:S24Demo'});
+//      });
+//
+//      queue_entity.subscribe(function(message, headers, deliveryInfo){
+//        client.emit('bank:from_server', message);
+//      });
+//
+//      client.on('disconnect', function(){
+//        queue_entity.destroy();
+//        console.log('Client Disconnected.');
+//      });
+//    });
+//});
 
 ///////////////////////////////////////////
 //              Routes                   //
@@ -84,6 +110,22 @@ function NotFound(msg){
     Error.call(this, msg);
     Error.captureStackTrace(this, arguments.callee);
 }
+
+
+var context = rabbit.createContext();
+context.on('ready', function() {
+    var socket = io.listen(server);
+        socket.sockets.on('connection', function(client){
+            var req = context.socket('REQ');
+        req.connect("entities", function(){
+            //nothing
+            req.write(JSON.stringify({welcome: 'rabbit.js'}), 'utf8');
+        });
+        req.on("data", function(msg){
+            console.log(msg);
+        });
+    });
+});
 
 
 console.log('Listening on http://0.0.0.0:' + port );

@@ -1,6 +1,18 @@
 extends layout
 
 block content
-	div
-		a(id='sender')='Send a Message'
-		ul(id='receiver')
+    div(class='container')
+        h2()='Bank model editor'
+        form(class='well')
+            fieldset()
+                label()='ID'
+                input(id='id_id', type='text', placeholder='Entity ID')
+                label()='Name'
+                input(id='id_name', type='text', placeholder='Bank name')
+                label()='ABI'
+                input(id='id_abi', type='text', placeholder='ABI')
+                label()='CAB'
+                input(id='id_cab', type='text', placeholder='CAB')
+                label()='Last update'
+                input(id='id_update', type='text', readonly='readonly')
+            button(id='sender', class='btn')='Send bank'
